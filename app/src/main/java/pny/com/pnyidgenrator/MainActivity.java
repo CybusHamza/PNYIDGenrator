@@ -41,7 +41,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,32 +50,38 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final int CAMREA_ID = 1;
+    private static final int CAMREA_ID = 1;
 
-    LinearLayout parentLayour;
-    TextView save, studentId;
-    de.hdodenhof.circleimageview.CircleImageView pp;
-    Spinner course;
-    EditText studentName, CNIC, batchNum, contactNo, vehicleNum, address, startDate, expiryDate;
+    private LinearLayout parentLayout;
+    private de.hdodenhof.circleimageview.CircleImageView pp;
+    private Spinner course;
+    private EditText studentName;
+    private EditText CNIC;
+    private EditText batchNum;
+    private EditText contactNo;
+    private EditText vehicleNum;
+    private EditText address;
+    private EditText startDate;
+    private EditText expiryDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        parentLayour = (LinearLayout) findViewById(R.id.parentLayour);
-        save = (TextView) findViewById(R.id.save);
-        studentId = (TextView) findViewById(R.id.studentId);
-        pp = (de.hdodenhof.circleimageview.CircleImageView) findViewById(R.id.ppimage);
-        studentName = (EditText) findViewById(R.id.studentName);
-        course = (Spinner) findViewById(R.id.courseName);
-        CNIC = (EditText) findViewById(R.id.CNIC);
-        batchNum = (EditText) findViewById(R.id.batchNum);
-        contactNo = (EditText) findViewById(R.id.contactNo);
-        vehicleNum = (EditText) findViewById(R.id.vehicleNum);
-        address = (EditText) findViewById(R.id.address);
-        startDate = (EditText) findViewById(R.id.startDate);
-        expiryDate = (EditText) findViewById(R.id.expiryDate);
+        parentLayout = findViewById(R.id.parentLayour);
+        TextView save = findViewById(R.id.save);
+        TextView studentId = findViewById(R.id.studentId);
+        pp = findViewById(R.id.ppimage);
+        studentName = findViewById(R.id.studentName);
+        course = findViewById(R.id.courseName);
+        CNIC = findViewById(R.id.CNIC);
+        batchNum = findViewById(R.id.batchNum);
+        contactNo = findViewById(R.id.contactNo);
+        vehicleNum = findViewById(R.id.vehicleNum);
+        address = findViewById(R.id.address);
+        startDate = findViewById(R.id.startDate);
+        expiryDate = findViewById(R.id.expiryDate);
 
         studentId.setText(getStudentId());
         setCourses();
@@ -116,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }, 2000);
                 } else {
-                    Toast.makeText(MainActivity.this, "Please Enter all the required feilds", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Please Enter all the required fields", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -147,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!outRect.contains((int) event.getRawX(), (int) event.getRawY())) {
                     v.clearFocus();
                     InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    assert imm != null;
                     imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
                 }
             }
@@ -155,13 +161,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public String getStudentId() {
+    private String getStudentId() {
         Random random = new Random();
         String id = String.format("%04d", random.nextInt(10000));
         return "PNY-" + id;
     }
 
-    public boolean validateFields() {
+    private boolean validateFields() {
         if (studentName.getText().toString().equals("") || CNIC.getText().toString().equals("") || batchNum.getText().toString().equals("") ||
                 contactNo.getText().toString().equals("") || vehicleNum.getText().toString().equals("")
                 || startDate.getText().toString().equals("") || expiryDate.getText().toString().equals("")) {
@@ -171,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void setCourses() {
+    private void setCourses() {
 
         // Spinner Drop down elements
         ArrayList<String> categories = new ArrayList<>();
@@ -207,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
         course.setAdapter(dataAdapter);
     }
 
-    public void saveData(View view) {
+    private void saveData(View view) {
         //Define a bitmap with the same size as the view
         Bitmap returnedBitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
         //Bind a canvas to it
@@ -282,12 +288,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void sendDatatoServer() {
+    private void sendDatatoServer() {
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, "", new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                saveData(parentLayour);
+                saveData(parentLayout);
             }
         }, new Response.ErrorListener() {
             @Override
@@ -310,6 +316,7 @@ public class MainActivity extends AppCompatActivity {
                 params.put("batch_num", batchNum.getText().toString());
                 params.put("contact_num", contactNo.getText().toString());
                 params.put("vehicle_num", vehicleNum.getText().toString());
+                params.put("address", address.getText().toString());
                 params.put("start_date", startDate.getText().toString());
                 params.put("end_date", expiryDate.getText().toString());
 
