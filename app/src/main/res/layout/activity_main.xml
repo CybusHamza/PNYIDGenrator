@@ -119,7 +119,7 @@
                         android:textColor="#000"
                         android:paddingLeft="10dp"
                         android:inputType="number"
-                        android:maxLength="60"
+                        android:maxLength="13"
                         android:id="@+id/CNIC"/>
 
                     <Spinner
@@ -145,7 +145,7 @@
                     android:inputType="number"
                     android:textColor="#000"
                     android:paddingLeft="10dp"
-                    android:maxLength="60"
+                    android:maxLength="11"
                     android:id="@+id/contactNo"/>
 
                     <EditText

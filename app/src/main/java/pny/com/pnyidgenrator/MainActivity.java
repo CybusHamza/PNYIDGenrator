@@ -17,6 +17,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -29,6 +30,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -37,6 +39,7 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.theartofdev.edmodo.cropper.CropImage;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -52,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int CAMREA_ID = 1;
 
+    private static final String BASE_URL = "http://hamza.pnytrainings.com/Welcome/";
+
     private LinearLayout parentLayout;
     private de.hdodenhof.circleimageview.CircleImageView pp;
     private Spinner course;
@@ -63,6 +68,9 @@ public class MainActivity extends AppCompatActivity {
     private EditText address;
     private EditText startDate;
     private EditText expiryDate;
+    private TextView studentId;
+    ProgressDialog loading;
+    Bitmap bmp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
 
         parentLayout = findViewById(R.id.parentLayour);
         TextView save = findViewById(R.id.save);
-        TextView studentId = findViewById(R.id.studentId);
+        studentId = findViewById(R.id.studentId);
         pp = findViewById(R.id.ppimage);
         studentName = findViewById(R.id.studentName);
         course = findViewById(R.id.courseName);
@@ -106,20 +114,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
+                studentName.clearFocus();
+
+
+
                 if (validateFields()) {
-                    studentName.clearFocus();
+                    bmp= saveData(parentLayout);
+                    uploadImage();
 
-                    final ProgressDialog dialog = ProgressDialog.show(MainActivity.this, "", "Saving Data...",
-                            true);
-                    dialog.show();
-
-                    Handler handler = new Handler();
-                    handler.postDelayed(new Runnable() {
-                        public void run() {
-                            dialog.dismiss();
-                            sendDatatoServer();
-                        }
-                    }, 2000);
                 } else {
                     Toast.makeText(MainActivity.this, "Please Enter all the required fields", Toast.LENGTH_SHORT).show();
                 }
@@ -213,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
         course.setAdapter(dataAdapter);
     }
 
-    private void saveData(View view) {
+    private Bitmap saveData(View view) {
         //Define a bitmap with the same size as the view
         Bitmap returnedBitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
         //Bind a canvas to it
@@ -254,14 +256,14 @@ public class MainActivity extends AppCompatActivity {
             assert fileOutputStream != null;
             fileOutputStream.flush();
             fileOutputStream.close();
-            Toast.makeText(this, "Data saved successfully", Toast.LENGTH_SHORT).show();
 
-            startActivity(new Intent(MainActivity.this, MainActivity.class));
-            finish();
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+
+        return returnedBitmap;
     }
 
 
@@ -290,15 +292,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void sendDatatoServer() {
 
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, "", new Response.Listener<String>() {
+
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, BASE_URL + "insertStudent", new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                saveData(parentLayout);
+                loading.dismiss();
+                Toast.makeText(MainActivity.this, response, Toast.LENGTH_SHORT).show();
+
+                startActivity(new Intent(MainActivity.this, MainActivity.class));
+                finish();
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                loading.dismiss();
+                Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_SHORT).show();
             }
         }) {
             @Override
@@ -313,12 +321,15 @@ public class MainActivity extends AppCompatActivity {
 
                 params.put("name", studentName.getText().toString());
                 params.put("cnic", CNIC.getText().toString());
+                params.put("local_id", studentId.getText().toString());
                 params.put("batch_num", batchNum.getText().toString());
+                params.put("course", course.getSelectedItem().toString());
                 params.put("contact_num", contactNo.getText().toString());
                 params.put("vehicle_num", vehicleNum.getText().toString());
                 params.put("address", address.getText().toString());
                 params.put("start_date", startDate.getText().toString());
                 params.put("end_date", expiryDate.getText().toString());
+                params.put("card_image", "http://hamza.pnytrainings.com/"+studentName.getText().toString()+"_"+studentId.getText().toString());
 
                 return params;
 
@@ -326,9 +337,72 @@ public class MainActivity extends AppCompatActivity {
 
         };
 
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(5000, 3, 1));
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         requestQueue.add(stringRequest);
 
+    }
+
+
+    private void uploadImage() {
+
+        loading = ProgressDialog.show(MainActivity.this, "Uploading data", "Please wait...", true, false);
+
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, "http://hamza.pnytrainings.com/uploadImage.php", new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+
+                if(response.equals("Image uploaded")){
+                    sendDatatoServer();
+                }else {
+                    Toast.makeText(MainActivity.this, response, Toast.LENGTH_SHORT).show();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                loading.dismiss();
+                Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_SHORT).show();
+            }
+        }) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                return super.getHeaders();
+
+            }
+
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                HashMap<String, String> params = new HashMap<>();
+
+                params.put("ImageName", studentName.getText().toString()+"_"+studentId.getText().toString());
+                params.put("base64", getBase64());
+
+
+                return params;
+
+            }
+
+        };
+
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(5000, 3, 1));
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        requestQueue.add(stringRequest);
+
+    }
+
+
+    public String getBase64(){
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        //compress the image to jpg format
+        bmp.compress(Bitmap.CompressFormat.JPEG,100,byteArrayOutputStream);
+            /*
+            * encode image to base64 so that it can be picked by saveImage.php file
+            * */
+        String encodeImage = Base64.encodeToString(byteArrayOutputStream.toByteArray(),Base64.DEFAULT);
+
+        return encodeImage;
     }
 
 }
